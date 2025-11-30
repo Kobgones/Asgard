@@ -49,6 +49,10 @@ class Condominium
     #[Groups(['condominium:read', 'condominium:write'])]
     private ?string $postalCode = null;
 
+    #[ORM\Column(length: 255)]
+    #[Groups(['condominium:read', 'condominium:write'])]
+    private ?string $city = null;
+
     #[ORM\Column]
     #[Groups(['condominium:read', 'condominium:write'])]
     private ?int $numberOfMainUnits = null;
@@ -107,6 +111,18 @@ class Condominium
     public function setPostalCode(string $postalCode): static
     {
         $this->postalCode = $postalCode;
+
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(string $city): static
+    {
+        $this->city = $city;
 
         return $this;
     }
