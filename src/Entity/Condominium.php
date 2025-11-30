@@ -2,34 +2,73 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\CondominiumRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: CondominiumRepository::class)]
+#[ApiResource(
+    uriTemplate: '/condominiums',
+    operations: [
+        new Get(uriTemplate: '/condominium/{id}'),
+        new GetCollection(),
+        new Post(uriTemplate: '/condominium'),
+        new Put(uriTemplate: '/condominium/{id}'),
+        new Delete(uriTemplate: '/condominium/{id}'),
+    ],
+    normalizationContext: ['groups' => ['condominium:read']],
+    denormalizationContext: ['groups' => ['condominium:write']],
+    paginationItemsPerPage: 20,
+    paginationMaximumItemsPerPage: 100
+)]
 class Condominium
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['condominium:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['condominium:read', 'condominium:write'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['condominium:read', 'condominium:write'])]
     private ?string $address = null;
 
     #[ORM\Column(length: 12)]
+    #[Groups(['condominium:read', 'condominium:write'])]
     private ?string $postalCode = null;
 
     #[ORM\Column]
+    #[Groups(['condominium:read', 'condominium:write'])]
     private ?int $numberOfMainUnits = null;
 
     #[ORM\Column]
+    #[Groups(['condominium:read', 'condominium:write'])]
     private ?int $numberOfSecondaryUnits = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['condominium:read', 'condominium:write'])]
     private ?int $yearOfConstruction = null;
+
+    #[ORM\OneToMany(mappedBy: 'condominium', targetEntity: Unit::class, orphanRemoval: true)]
+    #[Groups(['condominium:read'])]
+    private Collection $units;
+
+    public function __construct()
+    {
+        $this->units = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -104,6 +143,36 @@ class Condominium
     public function setYearOfConstruction(?int $yearOfConstruction): static
     {
         $this->yearOfConstruction = $yearOfConstruction;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Unit>
+     */
+    public function getUnits(): Collection
+    {
+        return $this->units;
+    }
+
+    public function addUnit(Unit $unit): static
+    {
+        if (!$this->units->contains($unit)) {
+            $this->units->add($unit);
+            $unit->setCondominium($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUnit(Unit $unit): static
+    {
+        if ($this->units->removeElement($unit)) {
+            // set the owning side to null (unless already changed)
+            if ($unit->getCondominium() === $this) {
+                $unit->setCondominium(null);
+            }
+        }
 
         return $this;
     }
